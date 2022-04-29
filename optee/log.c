@@ -65,9 +65,13 @@ static bool init_shm(phys_addr_t shm_pa, uint32_t shm_size)
 	struct arm_smccc_res smccc;
 	uint32_t start = 1;
 
+/* pfn_valid returns incorrect value in kernel 5.15 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#else
 	if (pfn_valid(__phys_to_pfn(shm_pa)))
 		g_shm_va = (void __iomem *)__phys_to_virt(shm_pa);
 	else
+#endif
 		g_shm_va = ioremap_cache(shm_pa, shm_size);
 
 	if (!g_shm_va) {
@@ -146,6 +150,19 @@ static ssize_t log_buff_get_read_buff(char **buf, int len)
 		ctl->reader = 0;
 
 	return read_size;
+}
+/* not defined in kernel 5.15 s4d */
+void *memchr(const void *s, int c, size_t n)
+{
+	const unsigned char *p = s;
+
+	while (n-- != 0) {
+		if ((unsigned char)c == *p++) {
+			return (void *)(p - 1);
+		}
+	}
+
+	return NULL;
 }
 
 static size_t log_print_text(char *buf, size_t size)

@@ -16,7 +16,7 @@ optee_armtz-objs += core.o
 optee_armtz-objs += call.o
 optee_armtz-objs += rpc.o
 optee_armtz-objs += supp.o
-ifeq ($(KERNEL_A32_SUPPORT), true)
+ifeq ($(ARCH), arm)
 optee_armtz-objs += smccc-call-a32.o
 else
 optee_armtz-objs += smccc-call.o

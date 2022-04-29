@@ -31,6 +31,7 @@
 #include "optee_smc.h"
 #include "../tee_private.h"
 #include <linux/dma-mapping.h>
+#include <generated/uapi/linux/version.h>
 
 #define DRIVER_NAME "optee"
 
@@ -382,9 +383,12 @@ optee_config_shm_memremap(optee_invoke_fn *invoke_fn, void **memremaped_shm,
 	}
 
 	/* For normal memory we already have a cacheable mapping. */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#else
 	if (pfn_valid(__phys_to_pfn(paddr)))
 		va = (void __iomem *)__phys_to_virt(paddr);
 	else
+#endif
 		va = ioremap_cache(paddr, size);
 
 	if (!va) {
@@ -634,6 +638,5 @@ module_exit(optee_driver_exit);
 
 MODULE_AUTHOR("Linaro");
 MODULE_DESCRIPTION("OP-TEE driver");
-MODULE_SUPPORTED_DEVICE("");
 MODULE_VERSION("1.0");
 MODULE_LICENSE("GPL v2");
