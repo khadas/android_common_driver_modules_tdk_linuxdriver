@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-2.0-only
 LOCAL_INCLUDES += -I$(M)/../include  \
                -I$(M)/../include/linux \
                -I$(M)/include \
