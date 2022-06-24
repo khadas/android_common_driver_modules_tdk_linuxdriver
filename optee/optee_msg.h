@@ -67,7 +67,7 @@
 #define OPTEE_MSG_ATTR_META			BIT(8)
 
 /*
- * The temporary shared memory object is not physically contigous and this
+ * The temporary shared memory object is not physically contiguous and this
  * temp memref is followed by another fragment until the last temp memref
  * that doesn't have this bit set.
  */
@@ -318,7 +318,7 @@ struct optee_msg_arg {
  * struct optee_msg_arg::arg holds values defined by OPTEE_MSG_RPC_CMD_* below
  *
  * RPC communication with tee-supplicant is reversed compared to normal
- * client communication desribed above. The supplicant receives requests
+ * client communication described above. The supplicant receives requests
  * and sends responses.
  */
 
