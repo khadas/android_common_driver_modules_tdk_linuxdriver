@@ -333,10 +333,19 @@ static void timer_work_task(struct work_struct *work)
 			struct optee_timer_data, work);
 	struct tee_context *ctx = timer_data->ctx;
 	struct tee_device *teedev = ctx->teedev;
-	struct optee *optee = tee_get_drvdata(teedev);
-	struct optee_timer *timer = &optee->timer;
-	struct workqueue_struct *wq = timer->wq;
+	struct optee *optee = NULL;
+	struct optee_timer *timer = NULL;
+	struct workqueue_struct *wq = NULL;
 	int ret = 0;
+
+	optee = tee_get_drvdata(teedev);
+	if (!optee) {
+		pr_err("Can't find teedev!\n");
+		return;
+	}
+
+	timer = &optee->timer;
+	wq = timer->wq;
 
 	params[0].attr = TEE_IOCTL_PARAM_ATTR_TYPE_VALUE_INPUT;
 	params[1].attr = TEE_IOCTL_PARAM_ATTR_TYPE_NONE;
