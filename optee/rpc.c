@@ -385,7 +385,7 @@ void optee_timer_init(struct optee_timer *timer)
 	mutex_init(&timer->mutex);
 	INIT_LIST_HEAD(&timer->timer_list);
 
-	wq = create_workqueue("tee_timer");
+	wq = create_freezable_workqueue("tee_timer");
 	if (!wq)
 		return;
 	timer->wq = wq;
