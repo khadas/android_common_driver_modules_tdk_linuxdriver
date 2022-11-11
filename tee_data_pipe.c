@@ -566,7 +566,7 @@ uint32_t tee_ioctl_open_data_pipe(struct tee_context *tee_ctx,
 
 		// wait to set the status for STATUS_OPENED or STATUS_CLOSED
 		DEBUG("start block in function open_data_pipe, status = %d\n", pipe_ptr->status);
-		wait_event_interruptible_timeout(g_wait_queue_for_open, pipe_ptr->status != STATUS_OPENING, jiffies + HZ);
+		wait_event_interruptible_timeout(g_wait_queue_for_open, pipe_ptr->status != STATUS_OPENING, 2 * HZ);
 		DEBUG("end block in function open_data_pipe, status = %d\n", pipe_ptr->status);
 
 		if (pipe_ptr->status == STATUS_CLOSED) {
