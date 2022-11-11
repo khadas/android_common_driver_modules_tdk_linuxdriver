@@ -96,29 +96,6 @@ static void uninit_shm(void)
 	arm_smccc_smc(OPTEE_SMC_SET_LOGGER, start, 0, 0, 0, 0, 0, 0, &smccc);
 }
 
-static ssize_t log_mode_show(struct class *cla,
-		struct class_attribute *attr, char *buf)
-{
-	return sprintf(buf, "%d\n", optee_log_mode);
-}
-
-static ssize_t log_mode_store(struct class *cla,
-			       struct class_attribute *attr,
-			       const char *buf, size_t count)
-{
-	int res = 0;
-	int rc = 0;
-	struct optee_log_ctl_s *ctl = optee_log_ctl;
-
-	rc = kstrtoint(buf, 0, &res);
-	pr_notice("log_mode: %d->%d\n", optee_log_mode, res);
-	optee_log_mode = res;
-	if (ctl && ctl->mode != optee_log_mode)
-		ctl->mode = optee_log_mode;
-
-	return count;
-}
-
 static ssize_t log_buff_get_read_buff(char **buf, int len)
 {
 	int writer;
@@ -209,94 +186,6 @@ static size_t log_print_text(char *buf, size_t size)
 	return size;
 }
 
-static ssize_t log_buff_dump(void)
-{
-	ssize_t len;
-	char *ptr = NULL;
-	unsigned int writer = 0;
-	struct optee_log_ctl_s *ctl = optee_log_ctl;
-
-	if (!ctl)
-		return 0;
-
-	writer = ctl->writer;
-
-	if (looped) {
-		ptr = optee_log_buff + writer;
-		len = ctl->total_size - writer;
-
-		log_print_text(ptr, len);
-	}
-
-	ptr = optee_log_buff;
-	len = writer;
-
-	log_print_text(ptr, len);
-
-	return 0;
-}
-
-static void log_buff_reset(void)
-{
-	struct optee_log_ctl_s *ctl = optee_log_ctl;
-
-	if (!ctl)
-		return;
-
-	ctl->writer = 0;
-	ctl->reader = 0;
-
-	return;
-}
-
-static void log_buff_info(void)
-{
-#ifdef OPTEE_LOG_BUFFER_DEBUG
-	struct optee_log_ctl_s *ctl = optee_log_ctl;
-
-	if (!ctl)
-		return;
-
-	pr_notice("    total_size: %d\n", ctl->total_size);
-	pr_notice("     fill_size: %d\n", ctl->fill_size);
-	pr_notice("          mode: %d\n", ctl->mode);
-	pr_notice("        reader: %d\n", ctl->reader);
-	pr_notice("        writer: %d\n", ctl->writer);
-#endif
-}
-
-static ssize_t log_buff_store(struct class *cla, struct class_attribute *attr,
-		const char *buf, size_t count)
-{
-	int res = 0;
-	int rc = 0;
-
-	rc = kstrtoint(buf, 0, &res);
-	if (res == 0)
-		/* reset log buffer */
-		log_buff_reset();
-	else if (res == 1)
-		/* show log buffer info */
-		log_buff_info();
-	else
-		pr_notice("set 0 to reset tee log buffer\n");
-
-	return count;
-}
-
-static ssize_t log_buff_show(struct class *cla,
-		struct class_attribute *attr, char *buf)
-{
-	log_buff_dump();
-
-	return 0;
-}
-
-static struct class_attribute log_class_attrs[] = {
-	__ATTR(log_mode, S_IRUGO | S_IWUSR, log_mode_show, log_mode_store),
-	__ATTR(log_buff, S_IRUGO | S_IWUSR, log_buff_show, log_buff_store),
-};
-
 static void log_buff_output(void)
 {
 	size_t len;
@@ -322,8 +211,6 @@ int optee_log_init(struct tee_device *tee_dev, phys_addr_t shm_pa,
 		uint32_t shm_size)
 {
 	int rc = 0;
-	int i = 0;
-	int n = 0;
 
 	if (!init_shm(shm_pa, shm_size))
 		return -1;
@@ -340,14 +227,6 @@ int optee_log_init(struct tee_device *tee_dev, phys_addr_t shm_pa,
 	}
 	optee_log_ctl->mode = optee_log_mode;
 
-	/* create attr files */
-	n = sizeof(log_class_attrs) / sizeof(struct class_attribute);
-	for (i = 0; i < n; i++) {
-		rc = class_create_file(tee_dev->dev.class, &log_class_attrs[i]);
-		if (rc)
-			goto err;
-	}
-
 	/* init workqueue */
 	log_workqueue = create_singlethread_workqueue("tee-log-wq");
 	INIT_DELAYED_WORK(&log_work,do_log_timer);
@@ -361,17 +240,11 @@ err:
 
 void optee_log_exit(struct tee_device *tee_dev)
 {
-	int i = 0;
-	int n = 0;
 
 	if (log_workqueue) {
 		cancel_delayed_work_sync(&log_work);
 		destroy_workqueue(log_workqueue);
 	}
-
-	n = sizeof(log_class_attrs) / sizeof(struct class_attribute);
-	for (i = 0; i < n; i++)
-		class_remove_file(tee_dev->dev.class, &log_class_attrs[i]);
 
 	uninit_shm();
 }

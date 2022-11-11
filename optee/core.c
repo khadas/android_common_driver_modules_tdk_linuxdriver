@@ -33,7 +33,7 @@
 #include <linux/dma-mapping.h>
 #include <generated/uapi/linux/version.h>
 
-#define DRIVER_NAME "optee"
+#define DRIVER_NAME "optee_armtz"
 
 #define OPTEE_SHM_NUM_PRIV_PAGES	4
 
@@ -585,7 +585,7 @@ static int optee_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id optee_match[] = {
-	{ .compatible = "linaro,optee-tz" },
+	{ .compatible = "linaro,optee-tz-unused" },
 	{},
 };
 
