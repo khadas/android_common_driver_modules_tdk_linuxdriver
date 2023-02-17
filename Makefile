@@ -17,18 +17,24 @@ LOCAL_INCLUDES += -I$(M)/include \
 ccflags-y+=$(LOCAL_INCLUDES)
 EXTRA_CFLAGS += $(LOCAL_INCLUDES)
 
+ifeq ($(O),)
+out_dir := .
+else
+out_dir := $(O)
+endif
+include $(out_dir)/include/config/auto.conf
+
 all:
 	@$(MAKE) -C $(KERNEL_SRC) M=$(M)  modules
 	#@$(MAKE) -C $(KERNEL_SRC) M=$(M)/optee --trace  modules
 
 modules_install:
-	@echo "$(MAKE) INSTALL_MOD_STRIP=1 M=$(M) -C $(KERNEL_SRC) modules_install"
-	@$(MAKE) INSTALL_MOD_STRIP=1 M=$(M) -C $(KERNEL_SRC) modules_install
-	mkdir -p ${OUT_DIR}/../vendor_lib
-	if [ $(TARGET_BUILD_KERNEL_VERSION) = 5.15 ]; then \
-		find $(INSTALL_MOD_PATH)/lib/modules/*/$(INSTALL_MOD_DIR) -name "*.ko" -exec cp {} ${OUT_DIR}/../vendor_lib/ \;	; \
+	$(MAKE) INSTALL_MOD_STRIP=1 M=$(M) -C $(KERNEL_SRC) modules_install
+	$(Q)mkdir -p $(out_dir)/../vendor_lib
+	$(Q)if [ -z "$(CONFIG_AMLOGIC_KERNEL_VERSION)" ]; then \
+		find $(INSTALL_MOD_PATH)/lib/modules/*/extra -name "*.ko" -exec cp {} $(out_dir)/../vendor_lib/ \; ; \
 	else \
-		find $(INSTALL_MOD_PATH)/lib/modules/*/extra -name "*.ko" -exec cp {} ${OUT_DIR}/../vendor_lib/ \; ; \
+		find $(INSTALL_MOD_PATH)/lib/modules/*/$(INSTALL_MOD_DIR) -name "*.ko" -exec cp {} $(out_dir)/../vendor_lib/ \; ; \
 	fi
 
 clean:
