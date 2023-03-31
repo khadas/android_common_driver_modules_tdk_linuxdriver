@@ -29,6 +29,7 @@
 
 //#define OPTEE_LOG_BUFFER_DEBUG      1
 
+#define OPTEE_LOG_SHM_ADDR_MAGIC    0x1001
 #define OPTEE_LOG_BUFFER_MAGIC      0xAA00AA00
 #define OPTEE_LOG_BUFFER_OFFSET     0x00000080
 #define OPTEE_LOG_READ_MAX          PAGE_SIZE
@@ -62,8 +63,21 @@ static struct workqueue_struct *log_workqueue = NULL;
 
 static bool init_shm(phys_addr_t shm_pa, uint32_t shm_size)
 {
-	struct arm_smccc_res smccc;
+	struct arm_smccc_res smccc = { 0 };
 	uint32_t start = 1;
+
+	arm_smccc_smc(OPTEE_SMC_SET_LOGGER, start, shm_pa, shm_size, 0, 0, 0, 0,
+			&smccc);
+
+	if (smccc.a0 != TEEC_SUCCESS) {
+		pr_err("smc set logger failed, err = 0x%x\n", smccc.a0);
+		return false;
+	}
+
+	if (smccc.a1 == OPTEE_LOG_SHM_ADDR_MAGIC) {
+		shm_pa = smccc.a2;
+		shm_size = smccc.a3;
+	}
 
 /* pfn_valid returns incorrect value in kernel 5.15 */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
@@ -78,9 +92,6 @@ static bool init_shm(phys_addr_t shm_pa, uint32_t shm_size)
 		pr_err("map logger share-mem failed\n");
 		return false;
 	}
-
-	arm_smccc_smc(OPTEE_SMC_SET_LOGGER, start, shm_pa, shm_size, 0, 0, 0, 0,
-			&smccc);
 
 	return (0 == smccc.a0);
 }
@@ -213,7 +224,7 @@ int optee_log_init(struct tee_device *tee_dev, phys_addr_t shm_pa,
 	int rc = 0;
 
 	if (!init_shm(shm_pa, shm_size))
-		return -1;
+		return -EACCES;
 
 	optee_log_buff = (unsigned char *)(g_shm_va + OPTEE_LOG_BUFFER_OFFSET);
 	optee_log_ctl = (struct optee_log_ctl_s *)g_shm_va;
@@ -221,7 +232,7 @@ int optee_log_init(struct tee_device *tee_dev, phys_addr_t shm_pa,
 		|| (optee_log_ctl->inited != 1)) {
 		uninit_shm();
 		optee_log_ctl = NULL;
-		rc = -1;
+		rc = -EINVAL;
 		pr_err("tee log buffer init failed\n");
 		goto err;
 	}

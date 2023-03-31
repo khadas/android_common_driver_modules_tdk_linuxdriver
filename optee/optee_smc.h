@@ -420,18 +420,20 @@ struct optee_smc_disable_shm_cache_result {
 	OPTEE_SMC_FAST_CALL_VAL(OPTEE_SMC_FUNCID_FLUSH_WM)
 
 /*
- * set logger
+ * Set logger
  *
  * Call register usage:
  * a0      SMC Function ID, OPTEE_SMC_SET_LOGGER
- * a1      start logger: a1 > 0; stop logger: a1 = 0;
- * a2      logger share-mem phy addr
- * a3      logger share-mem size
+ * a1      Start logger: a1 > 0; stop logger: a1 = 0;
+ * a2      Logger share-mem phy addr
+ * a3      Logger share-mem size
  * a4-7    Not used
  *
  * Normal return register usage:
- * a0      set logger result
- * a1-7    Preserved
+ * a0      Set logger result
+ * a1      Logger get flags
+ * a2      Logger share-mem phy addr
+ * a3      Logger share-mem size
  */
 #define OPTEE_SMC_FUNCID_SET_LOGGER    0xE001
 #define OPTEE_SMC_SET_LOGGER \
