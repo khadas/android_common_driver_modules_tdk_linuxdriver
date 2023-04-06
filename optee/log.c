@@ -70,7 +70,7 @@ static bool init_shm(phys_addr_t shm_pa, uint32_t shm_size)
 			&smccc);
 
 	if (smccc.a0 != TEEC_SUCCESS) {
-		pr_err("smc set logger failed, err = 0x%x\n", smccc.a0);
+		pr_err("smc set logger failed, err = 0x%lx\n", smccc.a0);
 		return false;
 	}
 
